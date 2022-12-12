@@ -578,6 +578,7 @@ void Listen(int s, int backlog)
 	unix_error("Listen error");
 }
 
+// Accept 함수; 식별자, 소켓주소, 주소길이
 int Accept(int s, struct sockaddr *addr, socklen_t *addrlen) 
 {
     int rc;

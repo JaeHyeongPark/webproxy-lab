@@ -8,10 +8,21 @@ CC = gcc
 CFLAGS = -g -Wall
 LDFLAGS = -lpthread
 
-all: proxy
+all: echo_server echo_client
 
 csapp.o: csapp.c csapp.h
 	$(CC) $(CFLAGS) -c csapp.c
+
+# 에코서버 테스트------------------------------------------------------
+echo_client: echoclient.c csapp.o
+	$(CC) $(CFLAGS) -o echo_client echoclient.c csapp.o $(LDFLAGS)
+
+echo_server: echoserveri.c csapp.o
+	$(CC) $(CFLAGS) -o echo_server echoserveri.c csapp.o $(LDFLAGS)
+
+csapp.o: csapp.c
+	$(CC) $(CFLAGS) -c csapp.c
+# 에코서버 테스트------------------------------------------------------
 
 proxy.o: proxy.c csapp.h
 	$(CC) $(CFLAGS) -c proxy.c
@@ -25,5 +36,5 @@ handin:
 	(make clean; cd ..; tar cvf $(USER)-proxylab-handin.tar proxylab-handout --exclude tiny --exclude nop-server.py --exclude proxy --exclude driver.sh --exclude port-for-user.pl --exclude free-port.sh --exclude ".*")
 
 clean:
-	rm -f *~ *.o proxy core *.tar *.zip *.gzip *.bzip *.gz
+	rm -f *~ *.o echo_client echo_server core *.tar *.zip *.gzip *.bzip *.gz
 

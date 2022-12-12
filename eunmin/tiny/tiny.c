@@ -17,7 +17,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
                  char *longmsg);
 
-int main(int argc, char **argv)
+int main(int argc, char **argv) // 포트 번호 인자로 받음 
 {
   int listenfd, connfd;
   char hostname[MAXLINE], port[MAXLINE];
@@ -27,20 +27,29 @@ int main(int argc, char **argv)
   /* Check command line args */
   if (argc != 2)
   {
-    fprintf(stderr, "usage: %s <port>\n", argv[0]);
+    fprintf(stderr, "usage: %s <port>\n", argv[0]); 
     exit(1);
   }
 
+  // 듣기 소켓 오픈 
   listenfd = Open_listenfd(argv[1]);
+  
+  // 무한 서버 루프 
   while (1)
   {
     clientlen = sizeof(clientaddr);
+    
+    // 연결 요청 접수 
     connfd = Accept(listenfd, (SA *)&clientaddr,
                     &clientlen); // line:netp:tiny:accept
     Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE,
                 0);
     printf("Accepted connection from (%s, %s)\n", hostname, port);
+    
+    // 트랜잭션 수행 
     doit(connfd);  // line:netp:tiny:doit
+    
+    // 연결 종료 
     Close(connfd); // line:netp:tiny:close
   }
 }
@@ -60,6 +69,8 @@ void doit(int fd)
   printf("Request headers:\n");
   printf("%s", buf);
   sscanf(buf, "%s %s %s", method, uri, version);
+
+  
   if (strcasecmp(method, "GET"))
   {
     clienterror(fd, method, "501", "Not implemented",
@@ -150,23 +161,23 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
     strcpy(cgiargs, "");
     strcpy(filename, ".");
     strcat(filename, uri);
-    if (uri[strlen(uri) - 1] == ’/’)
+    if (uri[strlen(uri) - 1] == '/')
       strcat(filename, "home.html");
     return 1;
   }
   else
   { /* Dynamic content */
-ptr = index(uri, ’?’);
-if (ptr)
-{
-  strcpy(cgiargs, ptr + 1);
-  *ptr = ’\0’;
-}
-else
-  strcpy(cgiargs, "");
-strcpy(filename, ".");
-strcat(filename, uri);
-return 0;
+    ptr = index(uri, '?');
+    if (ptr)
+    {
+      strcpy(cgiargs, ptr + 1);
+      *ptr = '\0';
+    }
+    else
+      strcpy(cgiargs, "");
+    strcpy(filename, ".");
+    strcat(filename, uri);
+    return 0;
   }
 }
 
@@ -202,15 +213,15 @@ void serve_static(int fd, char *filename, int filesize)
 void get_filetype(char *filename, char *filetype)
 {
   if (strstr(filename, ".html"))
-strcpy(filetype, "text/html");
+    strcpy(filetype, "text/html");
   else if (strstr(filename, ".gif"))
-strcpy(filetype, "image/gif");
+    strcpy(filetype, "image/gif");
   else if (strstr(filename, ".png"))
-strcpy(filetype, "image/png");
+    strcpy(filetype, "image/png");
   else if (strstr(filename, ".jpg"))
-strcpy(filetype, "image/jpeg");
+    strcpy(filetype, "image/jpeg");
   else
-strcpy(filetype, "text/plain");
+    strcpy(filetype, "text/plain");
 }
 
 // 동적 콘텐츠를 클라이언트에게 serve하는 함수
@@ -227,10 +238,10 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
 
   if (Fork() == 0)
   { /* Child */
-/* Real server would set all CGI vars here */
-setenv("QUERY_STRING", cgiargs, 1);
-Dup2(fd, STDOUT_FILENO);              /* Redirect stdout to client */
-Execve(filename, emptylist, environ); /* Run CGI program */
+    /* Real server would set all CGI vars here */
+    setenv("QUERY_STRING", cgiargs, 1);
+    Dup2(fd, STDOUT_FILENO);              /* Redirect stdout to client */
+    Execve(filename, emptylist, environ); /* Run CGI program */
   }
   Wait(NULL); /* Parent waits for and reaps child */
 }

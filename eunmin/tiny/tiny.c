@@ -227,18 +227,20 @@ void serve_static(int connfd, char *filename, int filesize)
   // srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
   
   // 문제 11.9번을 위함 
-  char *p = Malloc(filesize); // malloc으로 filesize 만큼 메모리 할당
-  Rio_readn(srcfd, p, filesize); // 소스파일에서 p로 파일사이즈만큼 바이트 전송 
+  char *temp = Malloc(filesize); // malloc으로 filesize 만큼 메모리 할당
+  Rio_readn(srcfd, temp, filesize); // 소스파일에서 temp로 파일사이즈만큼 바이트 전송 
 
   // 파일을 메모리로 매핑한 후, 더이상 식별자 필요 없으니 파일 close (메모리 누수 방지)
   Close(srcfd);
 
   // `srcp`에서 시작하는 `filesize`를 클라이언트의 연결 식별자로 복사
   // Rio_writen(connfd, srcp, filesize); // 원본
-  Rio_writen(connfd, p, filesize); // 문제 11.9번을 위함 
+  // 문제 11.9번을 위함 - 연결 식별자에 temp로부터 filesize만큼 바이트 전송 
+  Rio_writen(connfd, temp, filesize);  
 
   // 매핑된 가상메모리 주소를 반환 (메모리 누수 방지)
-  Munmap(srcp, filesize);
+  Free(temp);
+  // Munmap(srcp, filesize);
 }
 
 /* get_filetype - 파일명으로부터 파일 타입 추출 */

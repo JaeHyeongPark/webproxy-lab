@@ -54,7 +54,7 @@ int main(int argc, char **argv) // 포트 번호 인자로 받음
   }
 }
 
-// HTTP transaction을 다루는 함수
+// HTTP transaction을 다루는 함수: 연결 식별자
 void doit(int fd)
 {
   int is_static;
@@ -70,6 +70,7 @@ void doit(int fd)
   printf("%s", buf);
   sscanf(buf, "%s %s %s", method, uri, version);
 
+  // GET 메소드가 아닌 경우 에러 -> 11.11번 문제랑 관련 있을 듯
   if (strcasecmp(method, "GET"))
   {
     clienterror(fd, method, "501", "Not implemented",
@@ -78,8 +79,8 @@ void doit(int fd)
   }
   read_requesthdrs(&rio);
 
-  /* GET요청으로 들어온 URI에서 파싱 */
-  is_static = parse_uri(uri, filename, cgiargs);
+  /* GET 요청으로 들어온 URI에서 파싱 */
+  is_static = parse_uri(uri, filename, cgiargs); // uri에 CGI인자가 없으면 1 반환 → 정적 컨텐츠
   if (stat(filename, &sbuf) < 0)
   {
     clienterror(fd, filename, "404", "Not found",
@@ -87,25 +88,28 @@ void doit(int fd)
     return;
   }
 
+  /* Serve static content */
   if (is_static)
-  { /* Serve static content */
+  {
     if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode))
     {
       clienterror(fd, filename, "403", "Forbidden",
                   "Tiny couldn’t read the file");
       return;
     }
-    serve_static(fd, filename, sbuf.st_size);
+    serve_static(fd, filename, sbuf.st_size); // 연결식별자, 파일명, 파일사이즈(?)
   }
+
+  /* Serve dynamic content */
   else
-  { /* Serve dynamic content */
+  {
     if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode))
     {
       clienterror(fd, filename, "403", "Forbidden",
                   "Tiny couldn’t run the CGI program");
       return;
     }
-    serve_dynamic(fd, filename, cgiargs);
+    serve_dynamic(fd, filename, cgiargs); // 연결식별자, 파일명, CGI 인자
   }
 }
 
@@ -157,7 +161,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
 {
   char *ptr;
 
-  // URI에 "cgi-bin" 문자열이 존재하지 않으면 정적 컨텐츠
+  // URI에 "cgi-bin" 문자열이 존재하지 않으면 정적 컨텐츠 → 1반환
   if (!strstr(uri, "cgi-bin"))
   {
     // 문자열 복사 함수: 복사한 문자열을 붙여넣기 할 주소, 복사할 문자열의 시작 주소
@@ -171,7 +175,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
     return 1;
   }
 
-  // URI에 "cgi-bin" 문자열이 존재하면 동적 컨텐츠
+  // URI에 "cgi-bin" 문자열이 존재하면 동적 컨텐츠 → 0반환
   else
   {
     /* 모든 CGI 인자 추출하기 */
@@ -195,39 +199,43 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
   }
 }
 
-// 정적 콘텐츠를 클라이언트에게 serve하는 함수: 파일 식별자, 파일명, 파일크기
-void serve_static(int fd, char *filename, int filesize)
+// 정적 콘텐츠를 클라이언트에게 serve하는 함수: 연결식별자, 파일명, 파일크기
+void serve_static(int connfd, char *filename, int filesize)
 {
   int srcfd; // 소스 파일 식별자
   char *srcp, filetype[MAXLINE], buf[MAXBUF];
 
-  /* Send response headers to client */
+  // 클라이언트에게 응답 line과 응답 헤더를 보냄
   get_filetype(filename, filetype); // 파일 이름의 접미어 검사 → 파일 타입 결정
-
-  // 클라이언트에 응답 line과 응답 헤더를 보냄
   sprintf(buf, "HTTP/1.2OK\r\n");
   sprintf(buf, "%sServer: Tiny Web Server\r\n", buf);
   sprintf(buf, "%sConnection: close\r\n", buf);
   sprintf(buf, "%sContent-length: %d\r\n", buf, filesize);
   sprintf(buf, "%sContent-type: %s\r\n\r\n", buf, filetype);
-  Rio_writen(fd, buf, strlen(buf));
+  Rio_writen(connfd, buf, strlen(buf));
   // 클라이언트에 응답 line과 응답 헤더를 보냄 - 끝
 
   printf("Response headers:\n");
   printf("%s", buf); // 빈 줄로 헤더 종료
 
   /* Send response body to client */
-  srcfd = Open(filename, O_RDONLY, 0); // read를 위해 file 오픈 + 식별자 얻어옴
+  srcfd = Open(filename, O_RDONLY, 0); // read를 위한 소스 file 오픈 + 식별자 얻어옴
 
-  // `mmap` 함수로 요청한 파일 가상메모리 영역으로 매핑
-  // 파일 srcfd의 첫 번째 filesize 바이트 주소 srcp에서 시작하는 private read-only 가상 메모리 영역으로 매핑
-  srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+  // 요청한 파일을 `mmap` 함수로 가상메모리 영역으로 매핑:
+  // private read-only 가상 메모리 영역으로 매핑
+  // 소스 파일 srcfd의 filesize 바이트의 가상메모리에서의 시작 주소 srcp
+  // srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+  
+  // 문제 11.9번을 위함 
+  char *p = Malloc(filesize); // malloc으로 filesize 만큼 메모리 할당
+  Rio_readn(srcfd, p, filesize); // 소스파일에서 p로 파일사이즈만큼 바이트 전송 
 
   // 파일을 메모리로 매핑한 후, 더이상 식별자 필요 없으니 파일 close (메모리 누수 방지)
   Close(srcfd);
 
   // `srcp`에서 시작하는 `filesize`를 클라이언트의 연결 식별자로 복사
-  Rio_writen(fd, srcp, filesize);
+  // Rio_writen(connfd, srcp, filesize); // 원본
+  Rio_writen(connfd, p, filesize); // 문제 11.9번을 위함 
 
   // 매핑된 가상메모리 주소를 반환 (메모리 누수 방지)
   Munmap(srcp, filesize);
@@ -244,7 +252,7 @@ void get_filetype(char *filename, char *filetype)
     strcpy(filetype, "image/png");
   else if (strstr(filename, ".jpg"))
     strcpy(filetype, "image/jpeg");
-  else if (strstr(filename, ".mp4")) // 동영상 mp4 추가 
+  else if (strstr(filename, ".mp4")) // 동영상 mp4 추가
     strcpy(filetype, "video/mp4");
   else
     strcpy(filetype, "text/plain");

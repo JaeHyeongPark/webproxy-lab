@@ -17,7 +17,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
                  char *longmsg);
 
-int main(int argc, char **argv) // 포트 번호 인자로 받음 
+int main(int argc, char **argv) // 포트 번호 인자로 받음
 {
   int listenfd, connfd;
   char hostname[MAXLINE], port[MAXLINE];
@@ -27,29 +27,29 @@ int main(int argc, char **argv) // 포트 번호 인자로 받음
   /* Check command line args */
   if (argc != 2)
   {
-    fprintf(stderr, "usage: %s <port>\n", argv[0]); 
+    fprintf(stderr, "usage: %s <port>\n", argv[0]);
     exit(1);
   }
 
-  // 듣기 소켓 오픈 
+  // 듣기 소켓 오픈
   listenfd = Open_listenfd(argv[1]);
-  
-  // 무한 서버 루프 
+
+  // 무한 서버 루프
   while (1)
   {
     clientlen = sizeof(clientaddr);
-    
-    // 연결 요청 접수 
+
+    // 연결 요청 접수
     connfd = Accept(listenfd, (SA *)&clientaddr,
                     &clientlen); // line:netp:tiny:accept
     Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE,
                 0);
     printf("Accepted connection from (%s, %s)\n", hostname, port);
-    
-    // 트랜잭션 수행 
-    doit(connfd);  // line:netp:tiny:doit
-    
-    // 연결 종료 
+
+    // 트랜잭션 수행
+    doit(connfd); // line:netp:tiny:doit
+
+    // 연결 종료
     Close(connfd); // line:netp:tiny:close
   }
 }
@@ -70,7 +70,6 @@ void doit(int fd)
   printf("%s", buf);
   sscanf(buf, "%s %s %s", method, uri, version);
 
-  
   if (strcasecmp(method, "GET"))
   {
     clienterror(fd, method, "501", "Not implemented",
@@ -142,7 +141,10 @@ void read_requesthdrs(rio_t *rp)
   char buf[MAXLINE];
 
   Rio_readlineb(rp, buf, MAXLINE);
-  while (strcmp(buf, "\r\n"))
+
+  // 요청 헤더를 종료하는 빈 텍스트 줄: `carriage return`과 `line feed`의 쌍
+  while (strcmp(buf, "\r\n")) // 두 문자열이 같으면 결과값이 0
+
   {
     Rio_readlineb(rp, buf, MAXLINE);
     printf("%s", buf);
@@ -151,7 +153,6 @@ void read_requesthdrs(rio_t *rp)
 }
 
 // HTTP URI를 parsing 하는 함수
-
 int parse_uri(char *uri, char *filename, char *cgiargs)
 {
   char *ptr;
@@ -182,7 +183,6 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
 }
 
 // 정적 콘텐츠를 클라이언트에게 serve하는 함수
-
 void serve_static(int fd, char *filename, int filesize)
 {
   int srcfd;
@@ -225,7 +225,6 @@ void get_filetype(char *filename, char *filetype)
 }
 
 // 동적 콘텐츠를 클라이언트에게 serve하는 함수
-
 void serve_dynamic(int fd, char *filename, char *cgiargs)
 {
   char buf[MAXLINE], *emptylist[] = {NULL};

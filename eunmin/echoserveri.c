@@ -23,7 +23,7 @@ int main(int argc, char **argv) // argv[1] → port
         exit(0);
     }
 
-    // 인자로 주어진 포트 번호로 듣기 식별자 소환 
+    // 인자로 주어진 포트 번호로 듣기 식별자 소환 (소켓 생성, bind까지 다 됨)
     listenfd = Open_listenfd(argv[1]);
 
     while (1)

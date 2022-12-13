@@ -8,17 +8,22 @@
 int main(void)
 {
 
-  char *buf, *p;
+  char *buf, *p, *a, *b;
   char arg1[MAXLINE], arg2[MAXLINE], content[MAXLINE];
   int n1 = 0, n2 = 0;
 
   /* Extract the two arguments */
+  // http://localhost:9999/cgi-bin/adder?number-1=15000&number-2=213
   if ((buf = getenv("QUERY_STRING")) != NULL)
   {
-    p = strchr(buf, '&');
+    p = strchr(buf, '&'); // buf -> number-1=15000 \0 number-2=213
     *p = '\0';
-    strcpy(arg1, buf);
-    strcpy(arg2, p + 1);
+
+    // 문제 11.10을 위해 수정한 부분
+    strcpy(arg1, buf + 9); // arg1 -> numbe`r-1=15000 -> 15000 
+    strcpy(arg2, p + 10); // arg2 -> number-2=213 -> 213
+    // 문제 11.10을 위해 수정한 부분 - 끝 
+    
     n1 = atoi(arg1);
     n2 = atoi(arg2);
   }

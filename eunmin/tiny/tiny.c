@@ -68,7 +68,7 @@ void doit(int fd)
   Rio_readlineb(&rio, buf, MAXLINE);
   printf("Request headers:\n");
   printf("%s", buf);
-  sscanf(buf, "%s %s %s", method, uri, version);
+  sscanf(buf, "%s %s %s", method, uri, version); // 파이썬의 map 같은거
 
   // GET 메소드가 아닌 경우 에러 -> 11.11번 문제랑 관련 있을 듯
   if (strcasecmp(method, "GET"))
@@ -161,7 +161,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
 {
   char *ptr;
 
-  // URI에 "cgi-bin" 문자열이 존재하지 않으면 정적 컨텐츠 → 1반환
+  // URI에 "cgi-bin" 문자열이 존재하지 않으면 정적 컨텐츠 → 포인터 반환
   if (!strstr(uri, "cgi-bin"))
   {
     // 문자열 복사 함수: 복사한 문자열을 붙여넣기 할 주소, 복사할 문자열의 시작 주소
@@ -175,7 +175,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
     return 1;
   }
 
-  // URI에 "cgi-bin" 문자열이 존재하면 동적 컨텐츠 → 0반환
+  // URI에 "cgi-bin" 문자열이 존재하면 동적 컨텐츠 
   else
   {
     /* 모든 CGI 인자 추출하기 */
@@ -184,7 +184,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
     // URI에 ?가 있으면
     if (ptr)
     {
-      strcpy(cgiargs, ptr + 1); // ? 다음에 오는 문자열을 cgiargs에 복사
+      strcpy(cgiargs, ptr + 1); // ? 다음에 오는 문자열을 전부 cgiargs에 복사
       *ptr = '\0';
     }
 
@@ -225,18 +225,18 @@ void serve_static(int connfd, char *filename, int filesize)
   // private read-only 가상 메모리 영역으로 매핑
   // 소스 파일 srcfd의 filesize 바이트의 가상메모리에서의 시작 주소 srcp
   // srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
-  
-  // 문제 11.9번을 위함 
-  char *temp = Malloc(filesize); // malloc으로 filesize 만큼 메모리 할당
-  Rio_readn(srcfd, temp, filesize); // 소스파일에서 temp로 파일사이즈만큼 바이트 전송 
+
+  // 문제 11.9번을 위함
+  char *temp = Malloc(filesize);    // malloc으로 filesize 만큼 메모리 할당
+  Rio_readn(srcfd, temp, filesize); // 소스파일에서 temp로 파일사이즈만큼 바이트 전송
 
   // 파일을 메모리로 매핑한 후, 더이상 식별자 필요 없으니 파일 close (메모리 누수 방지)
   Close(srcfd);
 
   // `srcp`에서 시작하는 `filesize`를 클라이언트의 연결 식별자로 복사
   // Rio_writen(connfd, srcp, filesize); // 원본
-  // 문제 11.9번을 위함 - 연결 식별자에 temp로부터 filesize만큼 바이트 전송 
-  Rio_writen(connfd, temp, filesize);  
+  // 문제 11.9번을 위함 - 연결 식별자에 temp로부터 filesize만큼 바이트 전송
+  Rio_writen(connfd, temp, filesize);
 
   // 매핑된 가상메모리 주소를 반환 (메모리 누수 방지)
   Free(temp);

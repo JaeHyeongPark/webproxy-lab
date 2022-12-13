@@ -244,8 +244,6 @@ void get_filetype(char *filename, char *filetype)
     strcpy(filetype, "image/png");
   else if (strstr(filename, ".jpg"))
     strcpy(filetype, "image/jpeg");
-  // else if (strstr(filename, ".mpg")) // 동영상 mpg 추가 
-  //   strcpy(filetype, "video/mpeg");
   else if (strstr(filename, ".mp4")) // 동영상 mp4 추가 
     strcpy(filetype, "video/mp4");
   else

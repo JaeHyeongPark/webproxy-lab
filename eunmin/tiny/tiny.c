@@ -11,9 +11,9 @@
 void doit(int fd);
 void read_requesthdrs(rio_t *rp);
 int parse_uri(char *uri, char *filename, char *cgiargs);
-void serve_static(int fd, char *filename, int filesize);
+void serve_static(int fd, char *filename, int filesize, char *method);
 void get_filetype(char *filename, char *filetype);
-void serve_dynamic(int fd, char *filename, char *cgiargs);
+void serve_dynamic(int fd, char *filename, char *cgiargs, char *method);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
                  char *longmsg);
 
@@ -70,8 +70,9 @@ void doit(int fd)
   printf("%s", buf);
   sscanf(buf, "%s %s %s", method, uri, version); // 파이썬의 map 같은거
 
-  // GET 메소드가 아닌 경우 에러 -> 11.11번 문제랑 관련 있을 듯
-  if (strcasecmp(method, "GET"))
+  // 11.11번 문제 때문에 수정한 if 조건문
+  // GET 메소드가 아니고, HEAD 메소드도 아니면 에러
+  if ((strcasecmp(method, "GET")) && (strcasecmp(method, "HEAD")))
   {
     clienterror(fd, method, "501", "Not implemented",
                 "Tiny does not implement this method");
@@ -97,7 +98,7 @@ void doit(int fd)
                   "Tiny couldn’t read the file");
       return;
     }
-    serve_static(fd, filename, sbuf.st_size); // 연결식별자, 파일명, 파일사이즈(?)
+    serve_static(fd, filename, sbuf.st_size, method); // 연결식별자, 파일명, 파일사이즈(?)
   }
 
   /* Serve dynamic content */
@@ -109,7 +110,7 @@ void doit(int fd)
                   "Tiny couldn’t run the CGI program");
       return;
     }
-    serve_dynamic(fd, filename, cgiargs); // 연결식별자, 파일명, CGI 인자
+    serve_dynamic(fd, filename, cgiargs, method); // 연결식별자, 파일명, CGI 인자
   }
 }
 
@@ -175,7 +176,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
     return 1;
   }
 
-  // URI에 "cgi-bin" 문자열이 존재하면 동적 컨텐츠 
+  // URI에 "cgi-bin" 문자열이 존재하면 동적 컨텐츠
   else
   {
     /* 모든 CGI 인자 추출하기 */
@@ -200,7 +201,7 @@ int parse_uri(char *uri, char *filename, char *cgiargs)
 }
 
 // 정적 콘텐츠를 클라이언트에게 serve하는 함수: 연결식별자, 파일명, 파일크기
-void serve_static(int connfd, char *filename, int filesize)
+void serve_static(int connfd, char *filename, int filesize, char *method)
 {
   int srcfd; // 소스 파일 식별자
   char *srcp, filetype[MAXLINE], buf[MAXBUF];
@@ -217,6 +218,9 @@ void serve_static(int connfd, char *filename, int filesize)
 
   printf("Response headers:\n");
   printf("%s", buf); // 빈 줄로 헤더 종료
+
+  if (strcasecmp(method, "HEAD") == 0)
+    return;
 
   /* Send response body to client */
   srcfd = Open(filename, O_RDONLY, 0); // read를 위한 소스 file 오픈 + 식별자 얻어옴
@@ -261,7 +265,7 @@ void get_filetype(char *filename, char *filetype)
 }
 
 // 동적 콘텐츠를 클라이언트에게 serve하는 함수: 파일 식별자, 파일명, CGI인자
-void serve_dynamic(int fd, char *filename, char *cgiargs)
+void serve_dynamic(int fd, char *filename, char *cgiargs, char *method)
 {
   char buf[MAXLINE], *emptylist[] = {NULL};
 
@@ -277,6 +281,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs)
     /* Real server would set all CGI vars here */
     // 자식 프로세스는 query_string 환경 변수를 요청온 URI의 CGI 인자로 초기화
     setenv("QUERY_STRING", cgiargs, 1);
+    setenv("REQUEST_METHOD", method, 1); // ************************************************* 여기 이해 
     Dup2(fd, STDOUT_FILENO);              // 자식 프로세스는 자식의 표준 출력(stdout)을 연결 파일 식별자로 재지정
     Execve(filename, emptylist, environ); // CGI 프로그램 로드 후 실행
   }

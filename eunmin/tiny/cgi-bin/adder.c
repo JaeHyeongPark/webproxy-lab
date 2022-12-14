@@ -1,7 +1,6 @@
 /*
  * adder.c - a minimal CGI program that adds two numbers together
  */
-/* $begin adder */
 
 #include "csapp.h"
 
@@ -13,7 +12,6 @@ int main(void)
   int n1 = 0, n2 = 0;
 
   /* Extract the two arguments */
-  // http://localhost:9999/cgi-bin/adder?number-1=15000&number-2=213
   if ((buf = getenv("QUERY_STRING")) != NULL)
   {
     p = strchr(buf, '&'); // buf -> number-1=15000 \0 number-2=213
@@ -46,4 +44,3 @@ int main(void)
   exit(0);
 }
 
-/* $end adder */

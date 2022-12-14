@@ -23,18 +23,6 @@ csapp.o: csapp.c
 # 에코서버 테스트------------------------------------------------------
 
 
-# echoclient.o: echoclient.c csapp.h
-# 	$(CC) $(CFLAGS) -c echoclient.c
-
-# echoserveri.o: echoserveri.c csapp.h
-# 	$(CC) $(CFLAGS) -c echoserveri.c
-
-# echoclient: echoclient.o csapp.o
-# 	$(CC) $(CFLAGS) -o echoclient.o -o echoclient $(LDFLAGS)
-
-# echoserveri: echoserveri.o csapp.o
-# 	$(CC) $(CFLAGS) -o echoserveri.o -o echoserveri $(LDFLAGS)
-
 csapp.o: csapp.c csapp.h
 	$(CC) $(CFLAGS) -c csapp.c
 

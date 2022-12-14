@@ -54,6 +54,7 @@ int main(int argc, char **argv) // 포트 번호 인자로 받음
   }
 }
 
+
 // HTTP transaction을 다루는 함수: 연결 식별자
 void doit(int fd)
 {
@@ -219,7 +220,7 @@ void serve_static(int connfd, char *filename, int filesize, char *method)
   printf("Response headers:\n");
   printf("%s", buf); // 빈 줄로 헤더 종료
 
-  if (strcasecmp(method, "HEAD") == 0)
+  if (strcasecmp(method, "HEAD") == 0) // 메소드가 HEAD일 경우 응답 바디 출력X
     return;
 
   /* Send response body to client */
@@ -278,10 +279,10 @@ void serve_dynamic(int fd, char *filename, char *cgiargs, char *method)
   // 새로운 자식 프로세스 포크
   if (Fork() == 0)
   {
-    /* Real server would set all CGI vars here */
+    /* 실제 서버는 모든 CGI 변수를 여기서 다 세팅함 */
     // 자식 프로세스는 query_string 환경 변수를 요청온 URI의 CGI 인자로 초기화
     setenv("QUERY_STRING", cgiargs, 1);
-    setenv("REQUEST_METHOD", method, 1); // ************************************************* 여기 이해 
+    setenv("REQUEST_METHOD", method, 1); // "REQUEST_METHOD" 환경 변수에 주어진 메소드 설정 
     Dup2(fd, STDOUT_FILENO);              // 자식 프로세스는 자식의 표준 출력(stdout)을 연결 파일 식별자로 재지정
     Execve(filename, emptylist, environ); // CGI 프로그램 로드 후 실행
   }

@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "stdlib.h": "c",
+        "stdio.h": "c",
+        "assert.h": "c",
+        "unistd.h": "c",
+        "sys/mman.h": "c",
+        "string.h": "c",
+        "errno.h": "c"
+    },
+    "sonarlint.pathToCompileCommands": "${workspaceFolder}/.vscode/compile_commands.json"
+}

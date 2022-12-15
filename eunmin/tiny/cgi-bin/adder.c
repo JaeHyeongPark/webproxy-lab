@@ -18,10 +18,17 @@ int main(void)
     *p = '\0';
 
     // 문제 11.10을 위해 수정한 부분
-    strcpy(arg1, buf + 9); // arg1 -> numbe`r-1=15000 -> 15000 
-    strcpy(arg2, p + 10); // arg2 -> number-2=213 -> 213
-    // 문제 11.10을 위해 수정한 부분 - 끝 
-    
+    strcpy(arg1, buf + 9); // arg1 -> number-1=15000 -> 15000
+    strcpy(arg2, p + 10);  // arg2 -> number-2=213 -> 213
+
+    // 민섭님이 리뷰해준 코드: =의 위치를 찾아서 인자 추출하기!
+    // strcpy(arg1, buf);
+    // strcpy(arg2, p + 1);
+    // n1 = strtol(strchr(arg1, '=') + 1, NULL, 10);
+    // n2 = strtol(strchr(arg2, '=') + 1, NULL, 10);
+
+    // 문제 11.10을 위해 수정한 부분 - 끝
+
     n1 = atoi(arg1);
     n2 = atoi(arg2);
   }
@@ -43,4 +50,3 @@ int main(void)
 
   exit(0);
 }
-
